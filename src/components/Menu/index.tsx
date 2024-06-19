@@ -1,19 +1,31 @@
-import { Container, Nav, Navbar } from 'react-bootstrap';
+import { Button, Container, Form, Nav, Navbar } from 'react-bootstrap';
 
 const Menu = () => {
   return (
-    <Navbar expand="lg"  className="bg-black text-light">
-      <Container>
-        <Navbar.Brand href="#home" className="text-light">NÓTICIAS</Navbar.Brand>
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto text-light">
-            <Nav.Link href="#home" className="text-light">Home</Nav.Link>
-            <Nav.Link href="#link" className="text-light">Link</Nav.Link>
-          </Nav>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
+    <Navbar expand="lg" className="bg-body-secondary">
+    <Container>
+      <Navbar.Brand href="#">Noticia</Navbar.Brand>
+      <Navbar.Toggle aria-controls="navbarScroll" />
+      <Navbar.Collapse id="navbarScroll">
+        <Nav
+          className="me-auto my-2 my-lg-0"
+          style={{ maxHeight: '100px' }}
+          navbarScroll
+        >
+          
+        </Nav>
+        <Form className="d-flex">
+          <Form.Control
+            type="search"
+            placeholder="Search"
+            className="me-2"
+            aria-label="Search"
+          />
+          <Button variant="outline-dark">Pesquisar</Button>
+        </Form>
+      </Navbar.Collapse>
+    </Container>
+  </Navbar>
   );
 }
 

@@ -1,62 +1,57 @@
 "use client";
 
-import{ useEffect, useState } from 'react';
+import { useReducer } from 'react';
 
 import { ImageUpload, Menu, TextEditor } from '@/components';
-import { Noticia } from '@/interfaces';
 import { Button, Col, Container, Form, Modal, Table } from 'react-bootstrap';
-import { useFormStatus } from 'react-dom';
 import { BsFillTrash3Fill, BsFillEyeFill } from 'react-icons/bs';
 import { MdEdit } from 'react-icons/md';
-import logErro from '@/util/Error';
 import { GETListarNoticia, POSTCadastrarNoticia } from '@/util/Request';
+import { Action, ModalType, State, initialState } from './type';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useLogErro } from '@/util';
 import { AxiosError } from 'axios';
 
-const Home = (): React.JSX.Element => {
-  const [noticias, setNoticias] = useState<Noticia[]>([]);
-  const [show, setShow] = useState<boolean>(false);
-  const [value, setValue] = useState<string>('');
-  const [imageBase64, setImageBase64] = useState<string>('');
-
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
-
-  const handleChange = (newValue: string) => setValue(newValue);
-  const handleImageUpload = (base64Data: string) => setImageBase64(base64Data);
-
-  const { pending } = useFormStatus();
-
-  const GETfetchNoticias = async () => {
-    try {
-      const response = await GETListarNoticia()
-      setNoticias(response);
-    } catch (error) {
-      logErro(error as AxiosError)
-    }
-  };
-
-  useEffect(() => {
-    GETfetchNoticias();
-  }, []);
-
-  const PostForm = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-
-    try {
-      await POSTCadastrarNoticia(formData, value, imageBase64);
-      handleClose()
-      GETfetchNoticias()
-    } catch (error) {
-      logErro(error as AxiosError)
-    }
+const reducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case 'SET_NOTICIAS':
+      return { ...state, noticias: action.payload };
+    case 'SHOW_MODAL':
+      return { ...state, activeModal: action.payload };
+    case 'HIDE_MODAL':
+      return { ...state, activeModal: null };
+    case 'SET_VALUE':
+      return { ...state, value: action.payload };
+    case 'SET_IMAGE':
+      return { ...state, imageBase64: action.payload };
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    default:
+      return state;
   }
+};
+
+const Home = (): React.JSX.Element => {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  const GETNoticias = useQuery({ queryKey: ['todos'], queryFn: GETListarNoticia });
+
+  const { LogErro } = useLogErro();
+
+  const handleShow = (modalType: ModalType) => dispatch({ type: 'SHOW_MODAL', payload: modalType });
+  const handleClose = () => dispatch({ type: 'HIDE_MODAL' });
+
+  const POSTSalvarNoticias = useMutation({
+    mutationFn: async (formData: FormData) => await POSTCadastrarNoticia(formData, state.value, state.imageBase64),
+    onSuccess: () => GETNoticias.refetch(),
+    onError: (error: AxiosError) => LogErro(error).data,
+  });
 
   return (
     <>
       <Menu />
       <Container>
-        <Button type="button" size="sm" className="me-2 mt-5" onClick={handleShow}>
+        <Button type="button" size="sm" className="me-2 mt-5" onClick={() => handleShow('cadastrar')}>
           Adicionar notícia
         </Button>
         <Table striped bordered hover size="sm" className="mt-5">
@@ -70,7 +65,8 @@ const Home = (): React.JSX.Element => {
             </tr>
           </thead>
           <tbody style={{ verticalAlign: 'middle' }}>
-            {noticias.map((noticia) => (
+            {GETNoticias.isLoading && 'Carregando'}
+            {GETNoticias.data && GETNoticias.data.map((noticia) => (
               <tr key={noticia.id}>
                 <td>{noticia.id}</td>
                 <td>{noticia.autor}</td>
@@ -91,23 +87,26 @@ const Home = (): React.JSX.Element => {
             ))}
           </tbody>
         </Table>
-        <Modal show={show} onHide={handleClose} size="lg">
+        <Modal show={state.activeModal === 'cadastrar'} onHide={handleClose} size="lg">
           <Modal.Header closeButton>
             <Modal.Title>Adicionar notícia</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <Form onSubmit={PostForm}>
+            <Form onSubmit={(event) => {
+              event.preventDefault()
+              POSTSalvarNoticias.mutate(new FormData(event.currentTarget))
+            }}>
               <div className="row">
                 <Col md={12}>
                   <Form.Group className="mb-3">
                     <Form.Label>Título</Form.Label>
-                    <Form.Control type="text" disabled={pending} name="titulo" />
+                    <Form.Control type="text" name="titulo" />
                   </Form.Group>
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-3">
                     <Form.Label>Resumo</Form.Label>
-                    <Form.Control type="text" disabled={pending} name="resumo" />
+                    <Form.Control type="text" name="resumo" />
                   </Form.Group>
                 </Col>
                 <Col md={4}>
@@ -146,24 +145,24 @@ const Home = (): React.JSX.Element => {
                 <Col md={8}>
                   <Form.Group className="mb-3">
                     <Form.Label>Imagem</Form.Label>
-                    <ImageUpload onUpload={handleImageUpload} />
+                    <ImageUpload onUpload={(base64) => dispatch({ type: 'SET_IMAGE', payload: base64 })} />
                   </Form.Group>
                 </Col>
               </div>
               <Form.Group className="mb-3">
                 <Form.Label>Conteúdo</Form.Label>
                 <TextEditor
-                  initialValue={value}
-                  onChange={handleChange}
+                  initialValue={state.value}
+                  onChange={(newValue) => dispatch({ type: 'SET_VALUE', payload: newValue })}
                   placeholder="Write something amazing..."
                 />
               </Form.Group>
               <div className="mt-3">
-                <Button variant="secondary" className="me-2" onClick={handleClose} disabled={pending}>
+                <Button variant="secondary" className="me-2" onClick={() => dispatch({ type: 'HIDE_MODAL' })} >
                   Fechar
                 </Button>
-                <Button type="submit" variant="primary" disabled={pending}>
-                  Salvar
+                <Button type="submit" variant="primary">
+                  salvar
                 </Button>
               </div>
             </Form>
