@@ -24,4 +24,4 @@ export type Action =
   | { type: "SET_IMAGE"; payload: string }
   | { type: "SET_LOADING"; payload: boolean };
 
-export type ModalType = "cadastrar" | "visualizar" | "excluir";
+export type ModalType = "cadastrar" | "visualizar" | "excluir" | "Editar";

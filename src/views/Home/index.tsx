@@ -73,13 +73,13 @@ const Home = (): React.JSX.Element => {
                 <td>{noticia.titulo}</td>
                 <td>{new Date(noticia.criado_em).toLocaleDateString()}</td>
                 <td className="d-flex justify-content-center g-3">
-                  <Button type="button" size="sm" className="me-2" variant="primary">
+                  <Button type="button" size="sm" className="me-2" variant="primary" onClick={() => handleShow('visualizar')}>
                     <MdEdit />
                   </Button>
-                  <Button type="button" size="sm" className="me-2" variant="outline-primary">
+                  <Button type="button" size="sm" className="me-2" variant="outline-primary" onClick={() => handleShow('visualizar')}>
                     <BsFillEyeFill />
                   </Button>
-                  <Button type="button" size="sm" variant="outline-danger">
+                  <Button type="button" size="sm" variant="outline-danger"  onClick={() => handleShow('excluir')}>
                     <BsFillTrash3Fill />
                   </Button>
                 </td>
@@ -166,6 +166,20 @@ const Home = (): React.JSX.Element => {
                 </Button>
               </div>
             </Form>
+          </Modal.Body>
+        </Modal>
+        <Modal show={state.activeModal === 'excluir'} onHide={handleClose} size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>Excluir noticia</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+          </Modal.Body>
+        </Modal>
+        <Modal show={state.activeModal === 'visualizar'} onHide={handleClose} size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>Visualizar</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
           </Modal.Body>
         </Modal>
       </Container>
